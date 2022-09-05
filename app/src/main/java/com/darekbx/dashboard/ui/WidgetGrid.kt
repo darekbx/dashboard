@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.GridCells
 import androidx.compose.foundation.lazy.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -18,10 +17,7 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.darekbx.dashboard.model.BitcoinPrice
-import com.darekbx.dashboard.model.Currency
-import com.darekbx.dashboard.model.GoldPrice
-import com.darekbx.dashboard.model.Widget
+import com.darekbx.dashboard.model.*
 import com.darekbx.dashboard.ui.theme.DashboardTheme
 import com.darekbx.dashboard.ui.widgets.BitcoinPriceWidget
 import com.darekbx.dashboard.ui.widgets.CurrencyWidget
@@ -33,7 +29,7 @@ fun WidgetGrid(
     modifier: Modifier = Modifier,
     widgets: List<Widget>,
     columns: Int,
-    cellDefaultHeight: Dp = 0.dp
+    cellDefaultHeight: Dp = 0.dp,
 ) {
     var target by remember {
         mutableStateOf<LayoutCoordinates?>(null)
@@ -46,15 +42,25 @@ fun WidgetGrid(
             .onGloballyPositioned { target = it },
         cells = GridCells.Fixed(columns)
     ) {
-       items(widgets) { widget ->
+        items(widgets) { widget ->
             val cellHeight = parentHeight
                 ?.let { height -> with(LocalDensity.current) { (height / 2).toDp() } }
                 ?: cellDefaultHeight
 
             when (widget) {
-                is Currency -> CurrencyWidget(modifier = modifier.height(cellHeight), widget = widget)
-                is GoldPrice -> GoldPriceWidget(modifier.height(cellHeight), widget)
-                is BitcoinPrice -> BitcoinPriceWidget(modifier.height(cellHeight), widget)
+                is Currency -> CurrencyWidget(
+                    modifier = modifier.height(cellHeight),
+                    currency = widget
+                )
+                is GoldPrice -> GoldPriceWidget(
+                    modifier = modifier.height(cellHeight),
+                    widget = widget
+                )
+                is BitcoinPrice -> BitcoinPriceWidget(
+                    modifier = modifier.height(cellHeight),
+                    widget = widget
+                )
+                else -> {}
             }
         }
     }

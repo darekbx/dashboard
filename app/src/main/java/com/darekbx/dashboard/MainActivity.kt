@@ -3,35 +3,23 @@ package com.darekbx.dashboard
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.GridCells
-import androidx.compose.foundation.lazy.LazyVerticalGrid
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
-import androidx.compose.material.Text
-import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.*
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.tooling.preview.Devices
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import com.darekbx.dashboard.model.BitcoinPrice
 import com.darekbx.dashboard.model.Currency
 import com.darekbx.dashboard.model.GoldPrice
 import com.darekbx.dashboard.ui.WidgetGrid
 import com.darekbx.dashboard.ui.theme.DashboardTheme
+import dagger.hilt.android.AndroidEntryPoint
 
 /**
  * Dashboard TODO
  *  - portrait and landscape
- *  - configurable grid (from settings)
+ *  - configurable grid (from settings, use DataStore)
  *  - generic widgets which can be choosed from the list
- *    - currencies (configurable, based on NBP)
+ *    - currencies (configurable, based on NBP, only from PLN in settings screen)
  *    - gold price (static)
  *    - bitcoin curse (static)
  *    - stock prices (configurable)
@@ -44,6 +32,7 @@ import com.darekbx.dashboard.ui.theme.DashboardTheme
  *    - grid size 3x2, 4x3, ...
  */
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
