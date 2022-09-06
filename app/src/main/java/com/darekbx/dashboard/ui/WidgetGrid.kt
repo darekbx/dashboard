@@ -20,8 +20,8 @@ import androidx.compose.ui.unit.dp
 import com.darekbx.dashboard.model.*
 import com.darekbx.dashboard.ui.theme.DashboardTheme
 import com.darekbx.dashboard.ui.widgets.BitcoinPriceWidget
-import com.darekbx.dashboard.ui.widgets.CurrencyWidget
 import com.darekbx.dashboard.ui.widgets.GoldPriceWidget
+import com.darekbx.dashboard.ui.widgets.currency.CurrencyWidget
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

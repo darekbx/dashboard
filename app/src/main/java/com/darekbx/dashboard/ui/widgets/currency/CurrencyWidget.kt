@@ -1,4 +1,4 @@
-package com.darekbx.dashboard.ui.widgets
+package com.darekbx.dashboard.ui.widgets.currency
 
 import android.graphics.PointF
 import androidx.compose.foundation.BorderStroke
@@ -21,13 +21,14 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.darekbx.dashboard.model.Currency
+import com.darekbx.dashboard.repository.currency.CurrencyWrapper
 import com.darekbx.dashboard.ui.common.Progress
-import com.darekbx.dashboard.ui.widgets.currency.CurrencyViewModel
 import com.darekbx.dashboard.viewmodel.SettingsViewModel
 import kotlinx.coroutines.delay
 import kotlin.math.abs
@@ -40,14 +41,19 @@ fun CurrencyWidget(
     currency: Currency,
 ) {
     val settings by remember { mutableStateOf(settingsViewModel.readSettings()) }
-    var currencyData by remember { mutableStateOf(emptyList<Float>()) }
+    var currencyData by remember { mutableStateOf<CurrencyWrapper?>(null) }
     var isActive by remember { mutableStateOf(true) }
 
     LaunchedEffect(currency) {
         do {
+
+            // Set data to null to display progress during data load
+            currencyData = null
+            delay(500)
+
             // `toMutableList` is used only to crate new reference of the list.
             // New reference is needed to invoke recomposition.
-            currencyData = currencyViewModel.fetchCurrencyData(currency).toMutableList()
+            currencyData = currencyViewModel.fetchCurrencyData(currency)
             delay(settings.refreshInterval)
         } while (isActive)
     }
@@ -64,7 +70,7 @@ fun CurrencyWidget(
 @Composable
 private fun CurrencyWidgetCard(
     modifier: Modifier = Modifier,
-    currencyData: List<Float>?,
+    currencyData: CurrencyWrapper?,
     widget: Currency
 ) {
     Card(
@@ -75,29 +81,52 @@ private fun CurrencyWidgetCard(
         shape = MaterialTheme.shapes.small.copy(all = CornerSize(16.dp)),
         backgroundColor = Color(27, 29, 33)
     ) {
-        if (currencyData == null) {
-            Progress()
-        } else {
-            Column(
-                Modifier.padding(4.dp),
-                verticalArrangement = Arrangement.SpaceEvenly,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Chart(
-                    Modifier
-                        .fillMaxSize()
-                        .weight(1f), currencyData = currencyData
-                )
-                Title(Modifier, widget = widget)
+        when {
+            currencyData == null -> Progress()
+            currencyData.hasError -> ErrorView(
+                Modifier.fillMaxSize(),
+                message = currencyData.errorMessage
+            )
+            else -> {
+                Column(
+                    Modifier.padding(4.dp),
+                    verticalArrangement = Arrangement.SpaceEvenly,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Chart(
+                        Modifier
+                            .fillMaxSize()
+                            .weight(1f), currencyData = currencyData.rates
+                    )
+                    Title(Modifier, widget = widget, date = currencyData.date)
+                }
             }
         }
+    }
+}
+
+@Preview
+@Composable
+private fun ErrorView(
+    modifier: Modifier = Modifier,
+    message: String? = "Unknown error"
+) {
+    Box(modifier = modifier) {
+        Text(
+            modifier = Modifier
+                .padding(16.dp)
+                .align(Alignment.Center),
+            text = message ?: "Unknown error",
+            color = Color(239,  83, 80)
+        )
     }
 }
 
 @Composable
 private fun Title(
     modifier: Modifier = Modifier,
-    widget: Currency
+    widget: Currency,
+    date: String
 ) {
     val text = buildAnnotatedString {
         append("${widget.from}")
@@ -105,6 +134,14 @@ private fun Title(
             append(" to ")
         }
         append("${widget.to}")
+        withStyle(SpanStyle(
+            fontSize = 8.sp,
+            color = Color.LightGray,
+            // Used to center date info
+            baselineShift = BaselineShift(0.11F)
+        )) {
+            append(" ($date)")
+        }
     }
     Text(
         modifier = modifier.padding(2.dp),
@@ -228,7 +265,17 @@ private fun ChartDescription(currencyData: List<Float>) {
 fun CurrencyWidgetPreview() {
     CurrencyWidgetCard(
         Modifier.size(250.dp, 200.dp),
-        listOf(4.56f, 4.57f, 4.60f, 4.59f, 4.53f, 4.61f, 4.64f, 4.69f, 4.68f, 4.65f, 4.60f, 4.56f),
+        CurrencyWrapper("2022-09-06", listOf(4.56f, 4.57f, 4.60f, 4.59f, 4.53f, 4.61f, 4.64f, 4.69f, 4.68f, 4.65f, 4.60f, 4.56f)),
+        Currency(Currency.CurrencyType.PLN, Currency.CurrencyType.USD)
+    )
+}
+
+@Preview
+@Composable
+fun CurrencyWidgetErrorPreview() {
+    CurrencyWidgetCard(
+        Modifier.size(250.dp, 200.dp),
+        CurrencyWrapper(errorMessage = "HTTP 500"),
         Currency(Currency.CurrencyType.PLN, Currency.CurrencyType.USD)
     )
 }

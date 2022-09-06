@@ -8,5 +8,5 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(): ViewModel() {
 
-    fun readSettings() = Settings(5000L)
+    fun readSettings() = Settings(15000L)
 }
