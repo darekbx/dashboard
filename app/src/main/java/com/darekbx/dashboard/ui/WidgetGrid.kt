@@ -1,11 +1,10 @@
 package com.darekbx.dashboard.ui
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.lazy.GridCells
-import androidx.compose.foundation.lazy.LazyVerticalGrid
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -20,10 +19,9 @@ import androidx.compose.ui.unit.dp
 import com.darekbx.dashboard.model.*
 import com.darekbx.dashboard.ui.theme.DashboardTheme
 import com.darekbx.dashboard.ui.widgets.BitcoinPriceWidget
-import com.darekbx.dashboard.ui.widgets.GoldPriceWidget
-import com.darekbx.dashboard.ui.widgets.currency.CurrencyWidget
+import com.darekbx.dashboard.ui.widgets.nbp.CurrencyWidget
+import com.darekbx.dashboard.ui.widgets.nbp.GoldPriceWidget
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun WidgetGrid(
     modifier: Modifier = Modifier,
@@ -40,7 +38,7 @@ fun WidgetGrid(
         modifier = modifier
             .background(Color.Black)
             .onGloballyPositioned { target = it },
-        cells = GridCells.Fixed(columns)
+        columns = GridCells.Fixed(columns)
     ) {
         items(widgets) { widget ->
             val cellHeight = parentHeight

@@ -1,4 +1,4 @@
-package com.darekbx.dashboard.ui.widgets.currency
+package com.darekbx.dashboard.ui.widgets.nbp
 
 import android.graphics.PointF
 import androidx.compose.foundation.BorderStroke
@@ -27,33 +27,70 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.darekbx.dashboard.model.Currency
-import com.darekbx.dashboard.repository.currency.CurrencyWrapper
+import com.darekbx.dashboard.model.GoldPrice
+import com.darekbx.dashboard.repository.nbp.CurrencyWrapper
+import com.darekbx.dashboard.repository.nbp.GoldPriceWrapper
 import com.darekbx.dashboard.ui.common.Progress
 import com.darekbx.dashboard.viewmodel.SettingsViewModel
 import kotlinx.coroutines.delay
+import java.lang.IllegalStateException
 import kotlin.math.abs
+
+@Composable
+fun GoldPriceWidget(
+    modifier: Modifier = Modifier,
+    nbpViewModel: NbpViewModel = hiltViewModel(),
+    settingsViewModel: SettingsViewModel = hiltViewModel(),
+    widget: GoldPrice,
+) {
+    val settings by remember { mutableStateOf(settingsViewModel.readSettings()) }
+    var result by remember { mutableStateOf<Result<GoldPriceWrapper>?>(null) }
+    var isActive by remember { mutableStateOf(true) }
+
+    LaunchedEffect(widget) {
+        do {
+
+            // Set data to null to display progress during data load
+            result = null
+            delay(500)
+
+            // `toMutableList` is used only to crate new reference of the list.
+            // New reference is needed to invoke recomposition.
+            result = nbpViewModel.fetchGoldPriceData(widget)
+            delay(settings.refreshInterval)
+        } while (isActive)
+    }
+
+    DisposableEffect(widget) {
+        onDispose {
+            isActive = false
+        }
+    }
+
+    GoldPriceWidgetCard(modifier, result)
+}
 
 @Composable
 fun CurrencyWidget(
     modifier: Modifier = Modifier,
-    currencyViewModel: CurrencyViewModel = hiltViewModel(),
+    nbpViewModel: NbpViewModel = hiltViewModel(),
     settingsViewModel: SettingsViewModel = hiltViewModel(),
     currency: Currency,
 ) {
     val settings by remember { mutableStateOf(settingsViewModel.readSettings()) }
-    var currencyData by remember { mutableStateOf<CurrencyWrapper?>(null) }
+    var result by remember { mutableStateOf<Result<CurrencyWrapper>?>(null) }
     var isActive by remember { mutableStateOf(true) }
 
     LaunchedEffect(currency) {
         do {
 
             // Set data to null to display progress during data load
-            currencyData = null
+            result = null
             delay(500)
 
             // `toMutableList` is used only to crate new reference of the list.
             // New reference is needed to invoke recomposition.
-            currencyData = currencyViewModel.fetchCurrencyData(currency)
+            result = nbpViewModel.fetchCurrencyData(currency)
             delay(settings.refreshInterval)
         } while (isActive)
     }
@@ -64,13 +101,53 @@ fun CurrencyWidget(
         }
     }
     
-    CurrencyWidgetCard(modifier, currencyData, currency)
+    CurrencyWidgetCard(modifier, result, currency)
+}
+
+@Composable
+private fun GoldPriceWidgetCard(
+    modifier: Modifier = Modifier,
+    result: Result<GoldPriceWrapper>?
+) {
+    Card(
+        modifier
+            .padding(8.dp),
+        elevation = 8.dp,
+        border = BorderStroke(1.dp,Color(33, 35, 39)),
+        shape = MaterialTheme.shapes.small.copy(all = CornerSize(16.dp)),
+        backgroundColor = Color(27, 29, 33)
+    ) {
+        when {
+            result == null -> Progress()
+            result.isFailure -> ErrorView(
+                Modifier.fillMaxSize(),
+                message = result.exceptionOrNull()!!.message
+            )
+            else -> {
+                Column(
+                    Modifier.padding(4.dp),
+                    verticalArrangement = Arrangement.SpaceEvenly,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    val nonNullResult = result.getOrNull()
+                        ?: throw IllegalStateException("Result cannot be null")
+                    Chart(
+                        Modifier
+                            .fillMaxSize()
+                            .weight(1f), currencyData = nonNullResult.goldPrices,
+                        chartColor = Color(255,215,0)
+                    )
+                    GoldPriceTitle(Modifier, date = nonNullResult.date)
+                }
+            }
+        }
+    }
 }
 
 @Composable
 private fun CurrencyWidgetCard(
     modifier: Modifier = Modifier,
-    currencyData: CurrencyWrapper?,
+    result: Result<CurrencyWrapper>?,
     widget: Currency
 ) {
     Card(
@@ -82,10 +159,10 @@ private fun CurrencyWidgetCard(
         backgroundColor = Color(27, 29, 33)
     ) {
         when {
-            currencyData == null -> Progress()
-            currencyData.hasError -> ErrorView(
+            result == null -> Progress()
+            result.isFailure -> ErrorView(
                 Modifier.fillMaxSize(),
-                message = currencyData.errorMessage
+                message = result.exceptionOrNull()!!.message
             )
             else -> {
                 Column(
@@ -93,12 +170,14 @@ private fun CurrencyWidgetCard(
                     verticalArrangement = Arrangement.SpaceEvenly,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    val nonNullResult = result.getOrNull()
+                        ?: throw IllegalStateException("Result cannot be null")
                     Chart(
                         Modifier
                             .fillMaxSize()
-                            .weight(1f), currencyData = currencyData.rates
+                            .weight(1f), currencyData = nonNullResult.rates
                     )
-                    Title(Modifier, widget = widget, date = currencyData.date)
+                    CurrencyTitle(Modifier, widget = widget, date = nonNullResult.date)
                 }
             }
         }
@@ -123,7 +202,7 @@ private fun ErrorView(
 }
 
 @Composable
-private fun Title(
+private fun CurrencyTitle(
     modifier: Modifier = Modifier,
     widget: Currency,
     date: String
@@ -151,9 +230,33 @@ private fun Title(
 }
 
 @Composable
+private fun GoldPriceTitle(
+    modifier: Modifier = Modifier,
+    date: String
+) {
+    val text = buildAnnotatedString {
+        append("1 oz of gold")
+        withStyle(SpanStyle(
+            fontSize = 8.sp,
+            color = Color.LightGray,
+            // Used to center date info
+            baselineShift = BaselineShift(0.11F)
+        )) {
+            append(" ($date)")
+        }
+    }
+    Text(
+        modifier = modifier.padding(2.dp),
+        text = text,
+        style = TextStyle(fontSize = 10.sp, color = Color.White.copy(alpha = 0.7f))
+    )
+}
+
+@Composable
 private fun Chart(
     modifier: Modifier = Modifier,
-    currencyData: List<Float>
+    currencyData: List<Float>,
+    chartColor: Color = Color.White
 ) {
     Box(
         modifier = modifier
@@ -164,7 +267,7 @@ private fun Chart(
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(start = 24.dp, top = 4.dp, end = 4.dp, bottom = 8.dp),
+                .padding(start = 21.dp, top = 4.dp, end = 4.dp, bottom = 8.dp),
             onDraw = {
                 val count = currencyData.size
                 val minValue = currencyData.minOrNull() ?: return@Canvas
@@ -185,7 +288,7 @@ private fun Chart(
                     val y = size.height - ((value - minValue) * heightRatio)
 
                     drawLine(
-                        Color.White,
+                        chartColor,
                         Offset(firstPoint.x, firstPoint.y),
                         Offset(x, y)
                     )
@@ -199,19 +302,21 @@ private fun Chart(
 }
 
 @Composable
-private fun ChartDescription(currencyData: List<Float>) {
+private fun ChartDescription(data: List<Float>) {
     Canvas(
         modifier = Modifier
             .fillMaxSize()
             .padding(start = 4.dp, top = 4.dp, end = 4.dp, bottom = 8.dp),
         onDraw = {
 
-            val minValue = currencyData.minOrNull() ?: return@Canvas
-            val maxValue = currencyData.maxOrNull() ?: return@Canvas
-            val latest = currencyData.last()
+            // Obtain left offset and others, different for small and big values
+            val hasBigValues = data.first() > 100F
+            val minValue = data.minOrNull() ?: return@Canvas
+            val maxValue = data.maxOrNull() ?: return@Canvas
+            val latest = data.last()
             val heightRatio = size.height / (maxValue - minValue)
 
-            val leftPosition = 16.dp.toPx()
+            val leftPosition = (if (hasBigValues) 18.dp else 16.dp).toPx()
             val latestDisplayTrashold = 0.05F
             val showLatest = abs(latest - maxValue) > latestDisplayTrashold ||
                     abs(latest - minValue) > latestDisplayTrashold
@@ -224,12 +329,18 @@ private fun ChartDescription(currencyData: List<Float>) {
 
             drawIntoCanvas {
                 with(it.nativeCanvas) {
-                    drawText("%.2f".format(maxValue), 0F, 8F, paint)
-                    val yPos = (maxValue - minValue) * heightRatio
-                    drawText("%.2f".format(minValue), 0F, yPos + 8F, paint)
+                    fun obtainFormat(value: Float) =
+                        if (hasBigValues) "%.0f".format(value)
+                        else "%.2f".format(maxValue)
+
+                    val maxText = obtainFormat(maxValue)
+                    val minText = obtainFormat(minValue)
+                    val latestText = obtainFormat(latest)
+
+                    drawText(maxText, 0F, 8F, paint)
+                    drawText(minText, 0F, (maxValue - minValue) * heightRatio + 8F, paint)
                     if (showLatest) {
-                        val yPosLatest = (maxValue - latest) * heightRatio
-                        drawText("%.2f".format(latest), 0F, yPosLatest + 8F, paint)
+                        drawText(latestText, 0F, (maxValue - latest) * heightRatio + 8F, paint)
                     }
                 }
             }
@@ -265,8 +376,17 @@ private fun ChartDescription(currencyData: List<Float>) {
 fun CurrencyWidgetPreview() {
     CurrencyWidgetCard(
         Modifier.size(250.dp, 200.dp),
-        CurrencyWrapper("2022-09-06", listOf(4.56f, 4.57f, 4.60f, 4.59f, 4.53f, 4.61f, 4.64f, 4.69f, 4.68f, 4.65f, 4.60f, 4.56f)),
+        Result.success(CurrencyWrapper("2022-09-06", listOf(4.56f, 4.57f, 4.60f, 4.59f, 4.53f, 4.61f, 4.64f, 4.69f, 4.68f, 4.65f, 4.60f, 4.56f))),
         Currency(Currency.CurrencyType.PLN, Currency.CurrencyType.USD)
+    )
+}
+
+@Preview
+@Composable
+fun GoldPriceWidgetPreview() {
+    GoldPriceWidgetCard(
+        Modifier.size(250.dp, 200.dp),
+        Result.success(GoldPriceWrapper("2022-09-06", listOf(7372F, 7370F, 7400F, 7380F, 7390F, 7385F, 7395F, 7390F)))
     )
 }
 
@@ -275,7 +395,7 @@ fun CurrencyWidgetPreview() {
 fun CurrencyWidgetErrorPreview() {
     CurrencyWidgetCard(
         Modifier.size(250.dp, 200.dp),
-        CurrencyWrapper(errorMessage = "HTTP 500"),
+        Result.failure(IllegalStateException("HTTP 500")),
         Currency(Currency.CurrencyType.PLN, Currency.CurrencyType.USD)
     )
 }

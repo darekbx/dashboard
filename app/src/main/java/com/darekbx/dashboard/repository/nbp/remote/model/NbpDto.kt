@@ -1,6 +1,13 @@
-package com.darekbx.dashboard.repository.currency.nbp.model
+package com.darekbx.dashboard.repository.nbp.remote.model
 
 import com.google.gson.annotations.SerializedName
+
+data class GoldPrice(
+    @SerializedName("data")
+    val date: String,
+    @SerializedName("cena")
+    val price: Double
+)
 
 data class RatesWrapper(
     @SerializedName("effectiveDate")
