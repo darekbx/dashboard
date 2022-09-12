@@ -18,9 +18,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.darekbx.dashboard.model.*
 import com.darekbx.dashboard.ui.theme.DashboardTheme
-import com.darekbx.dashboard.ui.widgets.BitcoinPriceWidget
+import com.darekbx.dashboard.ui.widgets.crypto.BitcoinPriceWidget
 import com.darekbx.dashboard.ui.widgets.nbp.CurrencyWidget
 import com.darekbx.dashboard.ui.widgets.nbp.GoldPriceWidget
+import com.darekbx.dashboard.ui.widgets.stock.StockPriceWidget
 
 @Composable
 fun WidgetGrid(
@@ -48,13 +49,17 @@ fun WidgetGrid(
             when (widget) {
                 is Currency -> CurrencyWidget(
                     modifier = modifier.height(cellHeight),
-                    currency = widget
+                    widget = widget
                 )
                 is GoldPrice -> GoldPriceWidget(
                     modifier = modifier.height(cellHeight),
                     widget = widget
                 )
                 is BitcoinPrice -> BitcoinPriceWidget(
+                    modifier = modifier.height(cellHeight),
+                    widget = widget
+                )
+                is StockPrice -> StockPriceWidget(
                     modifier = modifier.height(cellHeight),
                     widget = widget
                 )
@@ -72,7 +77,9 @@ fun WidgetGridPreview() {
             Currency(Currency.CurrencyType.PLN, Currency.CurrencyType.USD),
             Currency(Currency.CurrencyType.PLN, Currency.CurrencyType.EUR),
             GoldPrice(),
-            BitcoinPrice()
+            BitcoinPrice(),
+            StockPrice("PTON"),
+            StockPrice("AUVI")
         )
         WidgetGrid(widgets = widgets, columns = 3, cellDefaultHeight = 200.dp)
     }

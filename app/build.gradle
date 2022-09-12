@@ -18,6 +18,14 @@ android {
         vectorDrawables {
             useSupportLibrary true
         }
+
+        Properties properties = new Properties()
+        if (rootProject.file("local.properties").exists()) {
+            properties.load(rootProject.file("local.properties").newDataInputStream())
+        }
+
+        buildConfigField "String", "COIN_API_KEY", "\"${properties.getProperty("coin_api_key")}\""
+        buildConfigField "String", "POLYGON_IO_API_KEY", "\"${properties.getProperty("polygon_io_api_key")}\""
     }
 
     buildTypes {

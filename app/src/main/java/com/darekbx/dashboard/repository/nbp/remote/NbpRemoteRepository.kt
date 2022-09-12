@@ -3,9 +3,8 @@ package com.darekbx.dashboard.repository.nbp.remote
 import com.darekbx.dashboard.BuildConfig
 import com.darekbx.dashboard.model.Currency
 import com.darekbx.dashboard.model.GoldPrice
+import com.darekbx.dashboard.repository.CommonWrapper
 import com.darekbx.dashboard.repository.nbp.BaseNbpRepository
-import com.darekbx.dashboard.repository.nbp.CurrencyWrapper
-import com.darekbx.dashboard.repository.nbp.GoldPriceWrapper
 import com.darekbx.dashboard.repository.nbp.local.entities.Currency as LocalCurrency
 import com.darekbx.dashboard.repository.nbp.local.entities.GoldPrice as LocalGoldPrice
 import com.darekbx.dashboard.repository.nbp.remote.model.GoldPrice as RemoteGoldPrice
@@ -32,14 +31,14 @@ class NbpRemoteRepository @Inject constructor(
             .create(NBPService::class.java)
     }
 
-    override suspend fun fetchGoldPriceData(goldPrice: GoldPrice): Result<GoldPriceWrapper> {
+    override suspend fun fetchGoldPriceData(goldPrice: GoldPrice): Result<CommonWrapper> {
         try {
             nbpService.fetchActualGoldPrice().firstOrNull()?.let { data ->
                 val storedGoldPrices = nbpDao.listGoldPrices()
 
                 val noNewData = storedGoldPrices.any { it.date == data.date }
                 if (noNewData) {
-                    return Result.success(GoldPriceWrapper(data.date, storedGoldPrices.toPrices()))
+                    return Result.success(CommonWrapper(data.date, storedGoldPrices.toPrices()))
                 }
 
                 val goldPrices = storedGoldPrices.toMutableList()
@@ -51,7 +50,7 @@ class NbpRemoteRepository @Inject constructor(
                 nbpDao.add(newGoldPriceEntry)
                 goldPrices.add(newGoldPriceEntry)
 
-                return Result.success(GoldPriceWrapper(data.date, goldPrices.toPrices()))
+                return Result.success(CommonWrapper(data.date, goldPrices.toPrices()))
             } ?: run {
                 return Result.failure(Throwable("Null or empty reponse"))
             }
@@ -70,7 +69,7 @@ class NbpRemoteRepository @Inject constructor(
     private fun gramTo1oz(price: Double) =
         price * ONE_OZ_MULTIPLIER
 
-    override suspend fun fetchCurrencyData(currency: Currency): Result<CurrencyWrapper> {
+    override suspend fun fetchCurrencyData(currency: Currency): Result<CommonWrapper> {
         if (currency.from != Currency.CurrencyType.PLN) {
             throw IllegalStateException("Coversions from PLN are only allowed")
         }
@@ -83,7 +82,7 @@ class NbpRemoteRepository @Inject constructor(
 
                 val noNewData = storedRates.any { it.date == data.date }
                 if (noNewData) {
-                    return Result.success(CurrencyWrapper(data.date, storedRates.toRates()))
+                    return Result.success(CommonWrapper(data.date, storedRates.toRates()))
                 }
 
                 val rates = storedRates.toMutableList()
@@ -100,7 +99,7 @@ class NbpRemoteRepository @Inject constructor(
                     rates.add(newCurrencyEntry)
                 }
 
-                return Result.success(CurrencyWrapper(data.date, rates.toRates()))
+                return Result.success(CommonWrapper(data.date, rates.toRates()))
             } ?: run {
                 return Result.failure(Throwable("Null or empty reponse"))
             }

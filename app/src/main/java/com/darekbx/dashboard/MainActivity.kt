@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import com.darekbx.dashboard.model.BitcoinPrice
 import com.darekbx.dashboard.model.Currency
 import com.darekbx.dashboard.model.GoldPrice
+import com.darekbx.dashboard.model.StockPrice
 import com.darekbx.dashboard.ui.WidgetGrid
 import com.darekbx.dashboard.ui.theme.DashboardTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -47,9 +48,11 @@ class MainActivity : ComponentActivity() {
                         Currency(Currency.CurrencyType.PLN, Currency.CurrencyType.USD),
                         Currency(Currency.CurrencyType.PLN, Currency.CurrencyType.EUR),
                         GoldPrice(),
-                        BitcoinPrice()
+                        BitcoinPrice(),
+                        StockPrice("PTON"),
+                        StockPrice("AUVI")
                     )
-                    WidgetGrid(columns = 2 /*TODO*/, widgets = widgets)
+                    WidgetGrid(columns = 3 /*TODO*/, widgets = widgets)
                 }
             }
         }
