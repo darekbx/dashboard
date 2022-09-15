@@ -7,12 +7,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.ui.Modifier
-import com.darekbx.dashboard.model.BitcoinPrice
-import com.darekbx.dashboard.model.Currency
-import com.darekbx.dashboard.model.GoldPrice
-import com.darekbx.dashboard.model.StockPrice
+import com.darekbx.dashboard.model.*
 import com.darekbx.dashboard.ui.WidgetGrid
 import com.darekbx.dashboard.ui.theme.DashboardTheme
+import com.darekbx.dashboard.ui.widgets.waterlevel.WaterLevelWidget
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
@@ -50,9 +48,10 @@ class MainActivity : ComponentActivity() {
                         GoldPrice(),
                         BitcoinPrice(),
                         StockPrice("PTON"),
-                        StockPrice("AUVI")
+                        StockPrice("AUVI"),
+                        WaterLevel(152210170, "Warszawa Bulwary")
                     )
-                    WidgetGrid(columns = 3 /*TODO*/, widgets = widgets)
+                    WidgetGrid(columns = 3 /*TODO*/, rows = 3, widgets = widgets)
                 }
             }
         }

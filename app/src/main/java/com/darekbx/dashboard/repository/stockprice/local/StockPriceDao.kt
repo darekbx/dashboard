@@ -11,6 +11,9 @@ interface StockPriceDao {
     @Query("SELECT * FROM stock_price WHERE company_code = :companyCode")
     suspend fun listStockPrices(companyCode: String): List<StockPrice>
 
+    @Query("SELECT * FROM stock_price WHERE company_code = :companyCode ORDER BY uid DESC LIMIT 1")
+    suspend fun fetchLatest(companyCode: String): StockPrice
+
     @Insert
     suspend fun add(stockPrice: StockPrice)
 

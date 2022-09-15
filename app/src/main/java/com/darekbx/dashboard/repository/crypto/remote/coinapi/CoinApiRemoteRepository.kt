@@ -3,6 +3,7 @@ package com.darekbx.dashboard.repository.crypto.remote.coinapi
 import com.darekbx.dashboard.BuildConfig
 import com.darekbx.dashboard.model.BitcoinPrice
 import com.darekbx.dashboard.repository.CommonWrapper
+import com.darekbx.dashboard.repository.commonDateFormatter
 import com.darekbx.dashboard.repository.crypto.BaseCryptoRepository
 import com.darekbx.dashboard.repository.crypto.local.CryptoDao
 import com.darekbx.dashboard.repository.crypto.remote.coinapi.model.Trade
@@ -12,6 +13,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Headers
+import java.util.*
 import javax.inject.Inject
 
 class CoinApiRemoteRepository @Inject constructor(
@@ -30,8 +32,21 @@ class CoinApiRemoteRepository @Inject constructor(
 
     override suspend fun fetchBitcoinPrice(bitcoinPrice: BitcoinPrice): Result<CommonWrapper> {
         try {
+            val storedBitcoinPrices = cryptoDao.listBitcoinPrices()
+            val currentDate = commonDateFormatter.format(Date())
+            val latest = cryptoDao.fetchLatest()
+            val fetchedForToday = latest.date == currentDate
+
+            if (fetchedForToday) {
+                return Result.success(
+                    CommonWrapper(
+                        currentDate,
+                        storedBitcoinPrices.toFloatList()
+                    )
+                )
+            }
+
             coinApiService.fetchActualBitcoinPrice().firstOrNull()?.let { data ->
-                val storedBitcoinPrices = cryptoDao.listBitcoinPrices()
                 val noNewData =
                     storedBitcoinPrices.any { it.date.stripTime() == data.timeExchange.stripTime() }
                 if (noNewData) {
@@ -46,11 +61,8 @@ class CoinApiRemoteRepository @Inject constructor(
                 val bitcoinPrices = storedBitcoinPrices.toMutableList()
 
                 if (data.price > 0.0) {
-                    val newGoldPriceEntry = LocalBitcoinPrice(
-                        null,
-                        data.price,
-                        data.timeExchange.stripTime()
-                    )
+                    val newGoldPriceEntry = LocalBitcoinPrice(null,
+                        data.price.toInt().toDouble(), data.timeExchange.stripTime())
                     cryptoDao.add(newGoldPriceEntry)
                     bitcoinPrices.add(newGoldPriceEntry)
                 }
@@ -84,6 +96,7 @@ class CoinApiRemoteRepository @Inject constructor(
     }
 
     companion object {
+        var a = false
         private const val BASE_URL = "https://rest.coinapi.io/v1/"
     }
 }

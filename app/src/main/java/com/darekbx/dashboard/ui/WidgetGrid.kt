@@ -22,12 +22,14 @@ import com.darekbx.dashboard.ui.widgets.crypto.BitcoinPriceWidget
 import com.darekbx.dashboard.ui.widgets.nbp.CurrencyWidget
 import com.darekbx.dashboard.ui.widgets.nbp.GoldPriceWidget
 import com.darekbx.dashboard.ui.widgets.stock.StockPriceWidget
+import com.darekbx.dashboard.ui.widgets.waterlevel.WaterLevelWidget
 
 @Composable
 fun WidgetGrid(
     modifier: Modifier = Modifier,
     widgets: List<Widget>,
     columns: Int,
+    rows: Int,
     cellDefaultHeight: Dp = 0.dp,
 ) {
     var target by remember {
@@ -43,7 +45,7 @@ fun WidgetGrid(
     ) {
         items(widgets) { widget ->
             val cellHeight = parentHeight
-                ?.let { height -> with(LocalDensity.current) { (height / 2).toDp() } }
+                ?.let { height -> with(LocalDensity.current) { (height / rows).toDp() } }
                 ?: cellDefaultHeight
 
             when (widget) {
@@ -60,6 +62,10 @@ fun WidgetGrid(
                     widget = widget
                 )
                 is StockPrice -> StockPriceWidget(
+                    modifier = modifier.height(cellHeight),
+                    widget = widget
+                )
+                is WaterLevel -> WaterLevelWidget(
                     modifier = modifier.height(cellHeight),
                     widget = widget
                 )
@@ -81,6 +87,6 @@ fun WidgetGridPreview() {
             StockPrice("PTON"),
             StockPrice("AUVI")
         )
-        WidgetGrid(widgets = widgets, columns = 3, cellDefaultHeight = 200.dp)
+        WidgetGrid(widgets = widgets, columns = 3, rows = 3, cellDefaultHeight = 200.dp)
     }
 }

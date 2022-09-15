@@ -33,7 +33,7 @@ class StockPrice(val companyCode: String): Widget()
 /**
  * Wisla river level, Bulwary station
  */
-class RiverStatus(): Widget()
+class WaterLevel(val stationId: Long, val stationName: String): Widget()
 
 /**
  * Covid new cases

@@ -14,8 +14,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.BaselineShift
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
@@ -101,6 +107,32 @@ fun RefreshableContent(
 }
 
 @Composable
+fun ChartTitle(
+    modifier: Modifier = Modifier,
+    name: String,
+    date: String
+) {
+    val text = buildAnnotatedString {
+        append(name)
+        withStyle(
+            SpanStyle(
+                fontSize = 8.sp,
+                color = Color.LightGray,
+                // Used to center date info
+                baselineShift = BaselineShift(0.11F)
+            )
+        ) {
+            append(" ($date)")
+        }
+    }
+    Text(
+        modifier = modifier.padding(2.dp),
+        text = text,
+        style = TextStyle(fontSize = 10.sp, color = Color.White.copy(alpha = 0.7f))
+    )
+}
+
+@Composable
 fun Chart(
     modifier: Modifier = Modifier,
     currencyData: List<Float>,
@@ -115,7 +147,7 @@ fun Chart(
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(start = 21.dp, top = 4.dp, end = 4.dp, bottom = 8.dp),
+                .padding(start = 34.dp, top = 4.dp, end = 4.dp, bottom = 8.dp),
             onDraw = {
                 val count = currencyData.size
                 val minValue = currencyData.minOrNull() ?: return@Canvas

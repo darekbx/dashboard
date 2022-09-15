@@ -12,11 +12,17 @@ interface NbpDao {
     @Query("SELECT * FROM currency WHERE `from` = :from AND `to` = :to")
     suspend fun listCurrencies(from: String, to: String): List<Currency>
 
+    @Query("SELECT * FROM currency WHERE `from` = :from AND `to` = :to ORDER BY uid DESC LIMIT 1")
+    suspend fun fetchLatest(from: String, to: String): Currency
+
     @Insert
     suspend fun add(currency: Currency)
 
     @Query("SELECT * FROM gold_price")
     suspend fun listGoldPrices(): List<GoldPrice>
+
+    @Query("SELECT * FROM gold_price ORDER BY uid DESC LIMIT 1")
+    suspend fun fetchLatestGoldPrice(): GoldPrice
 
     @Insert
     suspend fun add(goldPrice: GoldPrice)

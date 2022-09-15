@@ -4,6 +4,7 @@ import com.darekbx.dashboard.BuildConfig
 import com.darekbx.dashboard.model.Currency
 import com.darekbx.dashboard.model.GoldPrice
 import com.darekbx.dashboard.repository.CommonWrapper
+import com.darekbx.dashboard.repository.commonDateFormatter
 import com.darekbx.dashboard.repository.nbp.BaseNbpRepository
 import com.darekbx.dashboard.repository.nbp.local.entities.Currency as LocalCurrency
 import com.darekbx.dashboard.repository.nbp.local.entities.GoldPrice as LocalGoldPrice
@@ -15,6 +16,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import java.lang.IllegalStateException
+import java.util.*
 import javax.inject.Inject
 
 class NbpRemoteRepository @Inject constructor(
@@ -33,20 +35,28 @@ class NbpRemoteRepository @Inject constructor(
 
     override suspend fun fetchGoldPriceData(goldPrice: GoldPrice): Result<CommonWrapper> {
         try {
-            nbpService.fetchActualGoldPrice().firstOrNull()?.let { data ->
-                val storedGoldPrices = nbpDao.listGoldPrices()
+            val storedGoldPrices = nbpDao.listGoldPrices()
+            val currentDate = commonDateFormatter.format(Date())
+            val latest = nbpDao.fetchLatestGoldPrice()
+            val fetchedForToday = latest.date == currentDate
 
+            if (fetchedForToday) {
+                return Result.success(
+                    CommonWrapper(
+                        currentDate,
+                        storedGoldPrices.toPrices()
+                    )
+                )
+            }
+
+            nbpService.fetchActualGoldPrice().firstOrNull()?.let { data ->
                 val noNewData = storedGoldPrices.any { it.date == data.date }
                 if (noNewData) {
                     return Result.success(CommonWrapper(data.date, storedGoldPrices.toPrices()))
                 }
 
                 val goldPrices = storedGoldPrices.toMutableList()
-                val newGoldPriceEntry = LocalGoldPrice(
-                    null,
-                    gramTo1oz(data.price),
-                    data.date
-                )
+                val newGoldPriceEntry = LocalGoldPrice(null, gramTo1oz(data.price), data.date)
                 nbpDao.add(newGoldPriceEntry)
                 goldPrices.add(newGoldPriceEntry)
 
@@ -74,9 +84,22 @@ class NbpRemoteRepository @Inject constructor(
             throw IllegalStateException("Coversions from PLN are only allowed")
         }
 
+        val storedRates = nbpDao.listCurrencies(currency.from.name, currency.to.name)
+        val currentDate = commonDateFormatter.format(Date())
+        val latest = nbpDao.fetchLatest(currency.from.name, currency.to.name)
+        val fetchedForToday = latest.date == currentDate
+
+        if (fetchedForToday) {
+            return Result.success(
+                CommonWrapper(
+                    currentDate,
+                    storedRates.toRates()
+                )
+            )
+        }
+
         try {
             nbpService.fetchActualTable().firstOrNull()?.let { data ->
-                val storedRates = nbpDao.listCurrencies(currency.from.name, currency.to.name)
                 val actualRate = data.rates
                     .firstOrNull { it.code.lowercase() == currency.to.name.lowercase() }
 
@@ -88,13 +111,8 @@ class NbpRemoteRepository @Inject constructor(
                 val rates = storedRates.toMutableList()
 
                 actualRate?.let { it ->
-                    val newCurrencyEntry = LocalCurrency(
-                        null,
-                        it.value,
-                        currency.from.name,
-                        currency.to.name,
-                        data.date
-                    )
+                    val newCurrencyEntry = LocalCurrency(null, it.value,
+                        currency.from.name, currency.to.name, data.date )
                     nbpDao.add(newCurrencyEntry)
                     rates.add(newCurrencyEntry)
                 }

@@ -6,6 +6,10 @@ import com.darekbx.dashboard.repository.crypto.BaseCryptoRepository
 import com.darekbx.dashboard.repository.crypto.local.CryptoDao
 import com.darekbx.dashboard.repository.crypto.local.CryptoDatabase
 import com.darekbx.dashboard.repository.crypto.remote.coinapi.CoinApiRemoteRepository
+import com.darekbx.dashboard.repository.imgw.local.WaterLevelDao
+import com.darekbx.dashboard.repository.imgw.local.WaterLevelDatabase
+import com.darekbx.dashboard.repository.imgw.remote.BaseWaterLevelRepository
+import com.darekbx.dashboard.repository.imgw.remote.ImgwRepository
 import com.darekbx.dashboard.repository.nbp.BaseNbpRepository
 import com.darekbx.dashboard.repository.nbp.local.NbpDao
 import com.darekbx.dashboard.repository.nbp.local.NbpDatabase
@@ -30,6 +34,7 @@ class CommonModule {
         private const val APP_DATABASE = "dashboard-db"
         private const val CRYPTO_DATABASE = "dashboard-crypto-db"
         private const val STOCK_PRICE_DATABASE = "dashboard-stock-price-db"
+        private const val WATER_LEVEL_DATABASE = "dashboard-water-level-db"
     }
 
     @Provides
@@ -93,4 +98,22 @@ class CommonModule {
     @Provides
     fun provideStockPriceDao(stockPriceDatabase: StockPriceDatabase): StockPriceDao =
         stockPriceDatabase.stockPriceDao()
+
+    @Provides
+    fun provideWaterLevelRepository(
+        okHttpClient: OkHttpClient,
+        waterLevelDao: WaterLevelDao
+    ): BaseWaterLevelRepository =
+        ImgwRepository(okHttpClient, waterLevelDao)
+
+    @Provides
+    fun provideWaterLevelDatabase(@ApplicationContext context: Context): WaterLevelDatabase =
+        Room.databaseBuilder(
+            context,
+            WaterLevelDatabase::class.java, WATER_LEVEL_DATABASE
+        ).build()
+
+    @Provides
+    fun provideWaterLevelDao(waterLevelDatabase: WaterLevelDatabase): WaterLevelDao =
+        waterLevelDatabase.waterLevelDao()
 }

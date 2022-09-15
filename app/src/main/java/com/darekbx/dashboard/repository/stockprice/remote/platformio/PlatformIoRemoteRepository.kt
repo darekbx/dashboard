@@ -2,6 +2,7 @@ package com.darekbx.dashboard.repository.stockprice.remote.platformio
 
 import com.darekbx.dashboard.BuildConfig
 import com.darekbx.dashboard.repository.CommonWrapper
+import com.darekbx.dashboard.repository.commonDateFormatter
 import com.darekbx.dashboard.model.StockPrice as WidgetStockPrice
 import com.darekbx.dashboard.repository.stockprice.BaseStockPriceRepository
 import com.darekbx.dashboard.repository.stockprice.local.StockPriceDao
@@ -13,8 +14,6 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Path
 import java.sql.Date
-import java.text.SimpleDateFormat
-import java.util.*
 import javax.inject.Inject
 
 class PlatformIoRemoteRepository @Inject constructor(
@@ -33,11 +32,24 @@ class PlatformIoRemoteRepository @Inject constructor(
 
     override suspend fun fetchStockPrice(stockPrice: WidgetStockPrice): Result<CommonWrapper> {
         try {
+            val storedData = stockPriceDao.listStockPrices(stockPrice.companyCode)
+            val currentDate = commonDateFormatter.format(java.util.Date())
+            val latest = stockPriceDao.fetchLatest(stockPrice.companyCode)
+            val fetchedForToday = latest.date == currentDate
+
+            if (fetchedForToday) {
+                return Result.success(
+                    CommonWrapper(
+                        currentDate,
+                        storedData.toFloatList()
+                    )
+                )
+            }
+
             platformIoService.fetchPreviousClosePrice(stockPrice.companyCode)
                 ?.takeIf { it.results.isNotEmpty() }
                 ?.let { resultsWrapper ->
                     val data = resultsWrapper.results.first()
-                    val storedData = stockPriceDao.listStockPrices(stockPrice.companyCode)
 
                     val noNewData = storedData.any { it.date == data.timestamp.toDate() }
                     if (noNewData) {
@@ -50,12 +62,8 @@ class PlatformIoRemoteRepository @Inject constructor(
                     }
 
                     val stockPrices = storedData.toMutableList()
-                    val newEntry = LocalStockPrice(
-                        null,
-                        stockPrice.companyCode,
-                        data.closePrice,
-                        data.timestamp.toDate()
-                    )
+                    val newEntry = LocalStockPrice(null, stockPrice.companyCode,
+                        data.closePrice, data.timestamp.toDate())
                     stockPriceDao.add(newEntry)
                     stockPrices.add(newEntry)
 
@@ -80,10 +88,8 @@ class PlatformIoRemoteRepository @Inject constructor(
 
     private fun Long.toDate(): String {
         val date = Date(this)
-        return dateFormatter.format(date)
+        return commonDateFormatter.format(date)
     }
-
-    private val dateFormatter by lazy { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
 
     private interface PlatformIoService {
 

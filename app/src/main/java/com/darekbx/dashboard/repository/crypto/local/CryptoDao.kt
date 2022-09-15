@@ -11,6 +11,9 @@ interface CryptoDao {
     @Query("SELECT * FROM bitcoin_price WHERE price > 0")
     suspend fun listBitcoinPrices(): List<BitcoinPrice>
 
+    @Query("SELECT * FROM bitcoin_price ORDER BY uid DESC LIMIT 1")
+    suspend fun fetchLatest(): BitcoinPrice
+
     @Insert
     suspend fun add(bitcoinPrice: BitcoinPrice)
 
